@@ -36,6 +36,35 @@ const complaintSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User' // Should be an admin
     },
+    category: {
+      type: String,
+      default: 'booking_problem'
+    },
+    provider: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    messages: [
+      {
+        sender: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true
+        },
+        senderRole: {
+          type: String,
+          enum: ['customer', 'provider', 'admin']
+        },
+        message: {
+          type: String,
+          required: true
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ],
     history: [
       {
         status: String,

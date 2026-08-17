@@ -6,7 +6,10 @@ const router = express.Router();
 
 router.use(protect);
 
-router.post('/', complaintController.createComplaint);
 router.get('/my', complaintController.getMyComplaints);
+router.post('/', complaintController.createComplaint);
+router.get('/:id', complaintController.getComplaintDetails);
+router.post('/:id/reply', complaintController.replyToComplaint);
+router.put('/:id/reopen', complaintController.reopenComplaint);
 
 module.exports = router;

@@ -93,9 +93,73 @@ const userSchema = new mongoose.Schema(
         type: String,
         default: ''
       },
+      idProofType: {
+        type: String,
+        default: 'Aadhaar Card'
+      },
+      idProofNumber: {
+        type: String,
+        default: ''
+      },
+      bio: {
+        type: String,
+        default: ''
+      },
+      skills: [
+        {
+          type: String
+        }
+      ],
+      languages: [
+        {
+          type: String
+        }
+      ],
       aiSummary: {
         type: String,
         default: ''
+      },
+      serviceRadiusKm: {
+        type: Number,
+        default: 25
+      },
+      servedCities: [
+        {
+          type: String
+        }
+      ],
+      servedZipCodes: [
+        {
+          type: String
+        }
+      ],
+      workingHours: {
+        monday: { isEnabled: { type: Boolean, default: true }, startTime: { type: String, default: '09:00' }, endTime: { type: String, default: '18:00' } },
+        tuesday: { isEnabled: { type: Boolean, default: true }, startTime: { type: String, default: '09:00' }, endTime: { type: String, default: '18:00' } },
+        wednesday: { isEnabled: { type: Boolean, default: true }, startTime: { type: String, default: '09:00' }, endTime: { type: String, default: '18:00' } },
+        thursday: { isEnabled: { type: Boolean, default: true }, startTime: { type: String, default: '09:00' }, endTime: { type: String, default: '18:00' } },
+        friday: { isEnabled: { type: Boolean, default: true }, startTime: { type: String, default: '09:00' }, endTime: { type: String, default: '18:00' } },
+        saturday: { isEnabled: { type: Boolean, default: true }, startTime: { type: String, default: '09:00' }, endTime: { type: String, default: '18:00' } },
+        sunday: { isEnabled: { type: Boolean, default: false }, startTime: { type: String, default: '09:00' }, endTime: { type: String, default: '18:00' } }
+      },
+      breakHours: {
+        isEnabled: { type: Boolean, default: true },
+        startTime: { type: String, default: '13:00' },
+        endTime: { type: String, default: '14:00' }
+      },
+      blockedDates: [
+        {
+          date: { type: String },
+          reason: { type: String, default: 'Personal Leave' }
+        }
+      ],
+      payoutAccount: {
+        accountType: { type: String, enum: ['bank_account', 'upi'], default: 'bank_account' },
+        accountHolderName: { type: String, default: '' },
+        bankName: { type: String, default: '' },
+        accountNumber: { type: String, default: '' },
+        ifscCode: { type: String, default: '' },
+        upiId: { type: String, default: '' }
       }
     }
   },

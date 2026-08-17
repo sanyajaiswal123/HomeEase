@@ -34,6 +34,8 @@ const reviewsRouter = require('./routes/reviews');
 const aiRouter = require('./routes/ai');
 const adminRouter = require('./routes/admin');
 const complaintsRouter = require('./routes/complaints');
+const notificationRouter = require('./routes/notifications');
+const offersRouter = require('./routes/offers');
 
 app.use('/api/auth', authRouter);
 app.use('/api/services', servicesRouter);
@@ -42,6 +44,8 @@ app.use('/api/reviews', reviewsRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/complaints', complaintsRouter);
+app.use('/api/notifications', notificationRouter);
+app.use('/api/offers', offersRouter);
 
 // Global 404 Route handler
 app.get('/favicon.ico', (req, res) => res.status(204).end());

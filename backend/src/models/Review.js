@@ -39,6 +39,15 @@ const reviewSchema = new mongoose.Schema(
     isReported: {
       type: Boolean,
       default: false
+    },
+    providerReply: {
+      message: {
+        type: String,
+        default: ''
+      },
+      repliedAt: {
+        type: Date
+      }
     }
   },
   {

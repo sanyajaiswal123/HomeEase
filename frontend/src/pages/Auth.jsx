@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import { API_ENDPOINTS, USER_ROLES } from '../config/constants';
@@ -9,6 +9,7 @@ import Input from '../components/ui/Input';
 
 export const Auth = () => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const isRegisterParam = searchParams.get('signup') === 'true';
 
   const [isRegister, setIsRegister] = useState(isRegisterParam);
@@ -45,11 +46,18 @@ export const Auth = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      if (user.role === USER_ROLES.CUSTOMER) navigate('/dashboard');
-      else if (user.role === USER_ROLES.PROVIDER) navigate('/provider-dashboard');
-      else if (user.role === USER_ROLES.ADMIN) navigate('/admin');
+      const redirectTarget = location.state?.redirect || searchParams.get('redirect');
+      if (redirectTarget && user.role === USER_ROLES.CUSTOMER) {
+        navigate(redirectTarget, { replace: true });
+      } else if (user.role === USER_ROLES.CUSTOMER) {
+        navigate('/dashboard', { replace: true });
+      } else if (user.role === USER_ROLES.PROVIDER) {
+        navigate('/provider-dashboard', { replace: true });
+      } else if (user.role === USER_ROLES.ADMIN) {
+        navigate('/admin', { replace: true });
+      }
     }
-  }, [user, navigate]);
+  }, [user, navigate, location.state, searchParams]);
 
   // Load service categories for provider registration
   useEffect(() => {

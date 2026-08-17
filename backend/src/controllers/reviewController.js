@@ -82,8 +82,9 @@ exports.createReview = catchAsync(async (req, res, next) => {
 });
 
 exports.getProviderReviews = catchAsync(async (req, res, next) => {
-  const reviews = await Review.find({ provider: req.params.providerId })
+  const reviews = await Review.find({ provider: req.params.providerId, isHidden: false })
     .populate('customer', 'name avatar')
+    .populate('service', 'name icon')
     .sort({ createdAt: -1 });
 
   res.status(200).json({
@@ -95,13 +96,109 @@ exports.getProviderReviews = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getMyProviderReviews = catchAsync(async (req, res, next) => {
+  if (req.user.role !== 'provider') {
+    return next(new AppError('Only providers can access provider review management.', 403));
+  }
+
+  const providerId = req.user._id;
+  const { ratingFilter = 'all', sort = 'newest' } = req.query;
+
+  let query = { provider: providerId };
+  if (ratingFilter !== 'all') {
+    query.rating = Number(ratingFilter);
+  }
+
+  let sortOption = { createdAt: -1 };
+  if (sort === 'oldest') sortOption = { createdAt: 1 };
+  if (sort === 'highest') sortOption = { rating: -1, createdAt: -1 };
+  if (sort === 'lowest') sortOption = { rating: 1, createdAt: -1 };
+
+  const reviews = await Review.find(query)
+    .populate('customer', 'name avatar email phone')
+    .populate('booking', 'scheduledDate totalAmount')
+    .sort(sortOption);
+
+  // Compute breakdown stats from all reviews for this provider
+  const allProviderReviews = await Review.find({ provider: providerId });
+
+  const totalReviews = allProviderReviews.length;
+  const star5Count = allProviderReviews.filter((r) => r.rating === 5).length;
+  const star4Count = allProviderReviews.filter((r) => r.rating === 4).length;
+  const star3Count = allProviderReviews.filter((r) => r.rating === 3).length;
+  const star2Count = allProviderReviews.filter((r) => r.rating === 2).length;
+  const star1Count = allProviderReviews.filter((r) => r.rating === 1).length;
+
+  const totalSum = allProviderReviews.reduce((sum, r) => sum + r.rating, 0);
+  const avgRating = totalReviews > 0 ? Math.round((totalSum / totalReviews) * 10) / 10 : 5.0;
+
+  res.status(200).json({
+    status: 'success',
+    results: reviews.length,
+    data: {
+      stats: {
+        avgRating,
+        totalReviews,
+        star5Count,
+        star4Count,
+        star3Count,
+        star2Count,
+        star1Count,
+        star5Percent: totalReviews > 0 ? Math.round((star5Count / totalReviews) * 100) : 0,
+        star4Percent: totalReviews > 0 ? Math.round((star4Count / totalReviews) * 100) : 0,
+        star3Percent: totalReviews > 0 ? Math.round((star3Count / totalReviews) * 100) : 0,
+        star2Percent: totalReviews > 0 ? Math.round((star2Count / totalReviews) * 100) : 0,
+        star1Percent: totalReviews > 0 ? Math.round((star1Count / totalReviews) * 100) : 0
+      },
+      reviews
+    }
+  });
+});
+
+exports.replyToReview = catchAsync(async (req, res, next) => {
+  if (req.user.role !== 'provider') {
+    return next(new AppError('Only providers can reply to reviews.', 403));
+  }
+
+  const { id } = req.params;
+  const { reply } = req.body;
+
+  if (!reply || !reply.trim()) {
+    return next(new AppError('Please provide a valid reply message.', 400));
+  }
+
+  const review = await Review.findById(id);
+  if (!review) {
+    return next(new AppError('Review not found.', 404));
+  }
+
+  if (review.provider.toString() !== req.user.id) {
+    return next(new AppError('You are not authorized to reply to this review.', 403));
+  }
+
+  review.providerReply = {
+    message: reply.trim(),
+    repliedAt: new Date()
+  };
+
+  await review.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Reply submitted successfully.',
+    data: {
+      review
+    }
+  });
+});
+
 // Background helper to compile provider reviews and update the bio summary using Gemini AI
 const generateProviderAISummary = async (providerId) => {
   if (!genAI) return;
 
   try {
     const reviews = await Review.find({ provider: providerId }).select('comment rating');
-    if (reviews.length < 2) return; // Need at least 2 reviews for summary
+    if (reviews.length < 2) return;
 
     const reviewTextList = reviews
       .map((r) => `- [Stars: ${r.rating}/5]: "${r.comment}"`)

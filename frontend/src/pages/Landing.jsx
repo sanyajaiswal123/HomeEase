@@ -1,6 +1,7 @@
 import React, { useState, useContext, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { LocationContext } from '../context/LocationContext';
 import Button from '../components/ui/Button';
 import {
   Sparkles,
@@ -34,6 +35,7 @@ import {
 
 export const Landing = () => {
   const { user } = useContext(AuthContext);
+  const { location: userLocation, detectLocation } = useContext(LocationContext);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFaq, setActiveFaq] = useState(null);
@@ -42,8 +44,38 @@ export const Landing = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate('/ai-diagnose');
+    const trimmed = searchQuery.trim();
+
+    if (!user) {
+      // If not logged in, redirect to login page without performing search
+      const targetUrl = trimmed ? `/services?search=${encodeURIComponent(trimmed)}` : '/services';
+      navigate('/auth', { state: { redirect: targetUrl } });
+      return;
+    }
+
+    // If logged in
+    if (trimmed) {
+      navigate(`/services?search=${encodeURIComponent(trimmed)}`);
+    } else {
+      navigate('/services');
+    }
+  };
+
+  const handlePillClick = (label) => {
+    const targetUrl = `/services?category=${encodeURIComponent(label)}`;
+    if (!user) {
+      navigate('/auth', { state: { redirect: targetUrl } });
+    } else {
+      navigate(targetUrl);
+    }
+  };
+
+  const handleServiceCardClick = (serviceName) => {
+    const targetUrl = `/services?search=${encodeURIComponent(serviceName)}`;
+    if (!user) {
+      navigate('/auth', { state: { redirect: targetUrl } });
+    } else {
+      navigate(targetUrl);
     }
   };
 
@@ -222,10 +254,13 @@ export const Landing = () => {
               onSubmit={handleSearch}
               className="w-full relative bg-white rounded-[24px] p-2 flex items-center shadow-2xl transition-all duration-300 mb-8 max-w-xl group focus-within:ring-4 focus-within:ring-primary/40 hover:shadow-primary/20"
             >
-              <div className="flex items-center pl-5 pr-4 border-r border-gray-100 text-gray-700 font-bold gap-2 cursor-pointer hover:text-primary transition-colors py-2">
+              <div
+                onClick={detectLocation}
+                title="Click to detect location"
+                className="flex items-center pl-5 pr-4 border-r border-gray-100 text-gray-700 font-bold gap-2 cursor-pointer hover:text-primary transition-colors py-2"
+              >
                 <MapPin size={18} className="text-primary" />
-                <span className="text-sm whitespace-nowrap">Delhi, India</span>
-                <ChevronDown size={14} className="text-gray-400" />
+                <span className="text-sm whitespace-nowrap">{userLocation}</span>
               </div>
               <div className="flex-1 flex items-center relative px-4">
                 <Search
@@ -253,6 +288,7 @@ export const Landing = () => {
               {pills.map((pill, idx) => (
                 <button
                   key={idx}
+                  onClick={() => handlePillClick(pill.label)}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-[16px] bg-white/10 hover:bg-white text-white hover:text-primary text-sm font-bold transition-all duration-300 shadow-sm border border-white/20 hover:border-transparent hover:-translate-y-1 hover:shadow-lg backdrop-blur-sm group"
                 >
                   <pill.icon
@@ -428,6 +464,7 @@ export const Landing = () => {
                   </div>
 
                   <Button
+                    onClick={() => handleServiceCardClick(service.name)}
                     variant="primary"
                     className="w-full rounded-lg shadow-sm py-2 font-bold mt-auto group-hover:bg-primary-hover transition-colors text-sm"
                   >

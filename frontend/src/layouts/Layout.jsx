@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { LocationContext } from '../context/LocationContext';
 import {
   LogOut,
   Sparkles,
@@ -17,52 +18,13 @@ import Button from '../components/ui/Button';
 
 export const Layout = ({ children }) => {
   const { user, logout } = useContext(AuthContext);
+  const { location: userLocation, detectLocation } = useContext(LocationContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userLocation, setUserLocation] = useState('Detecting location...');
 
   const isAdminPath = location.pathname.startsWith('/admin');
-
-  if (isAdminPath) {
-    return (
-      <div className="min-h-screen flex bg-bg-secondary text-text-primary font-sans">
-        {children}
-      </div>
-    );
-  }
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude, longitude } = position.coords;
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-            );
-            const data = await response.json();
-            const city =
-              data.address.city ||
-              data.address.town ||
-              data.address.village ||
-              data.address.state ||
-              'Unknown';
-            const country = data.address.country || 'Location';
-            setUserLocation(`${city}, ${country}`);
-          } catch (error) {
-            setUserLocation('Select your location');
-          }
-        },
-        () => {
-          setUserLocation('Select your location');
-        }
-      );
-    } else {
-      setUserLocation('Select your location');
-    }
-  }, []);
 
   const isLanding = location.pathname === '/';
   // On landing, we want it to blend perfectly with the dark teal background.
@@ -108,6 +70,14 @@ export const Layout = ({ children }) => {
     </Link>
   );
 
+  if (isAdminPath) {
+    return (
+      <div className="min-h-screen flex bg-bg-secondary text-text-primary font-sans">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-bg-secondary text-text-primary font-sans selection:bg-primary/30">
       {/* Top Navigation Bar */}
@@ -139,9 +109,7 @@ export const Layout = ({ children }) => {
           <div className="hidden lg:flex items-center gap-6">
             {!user ? (
               <>
-                <NavItem to="/services" hasDropdown>
-                  Services
-                </NavItem>
+                <NavItem to="/services">Services</NavItem>
                 <NavItem to="/how-it-works">How It Works</NavItem>
                 <NavItem to="/ai-diagnose">AI Assistant</NavItem>
                 <NavItem to="/become-provider">Become a Provider</NavItem>
@@ -152,15 +120,17 @@ export const Layout = ({ children }) => {
               <>
                 {user.role === 'customer' && (
                   <>
-                    <NavItem to="/dashboard">Services</NavItem>
+                    <NavItem to="/services">Services</NavItem>
+                    <NavItem to="/dashboard">Dashboard</NavItem>
                     <NavItem to="/ai-diagnose">AI Assistant</NavItem>
                     <NavItem to="/bookings">My Bookings</NavItem>
                   </>
                 )}
                 {user.role === 'provider' && (
                   <>
-                    <NavItem to="/provider-dashboard">Job Board</NavItem>
-                    <NavItem to="/provider-earnings">Earnings</NavItem>
+                    <NavItem to="/services">Services</NavItem>
+                    <NavItem to="/how-it-works">How It Works</NavItem>
+                    <NavItem to="/provider-dashboard">Provider Dashboard</NavItem>
                   </>
                 )}
                 {user.role === 'admin' && <NavItem to="/admin">Admin Panel</NavItem>}
@@ -172,6 +142,8 @@ export const Layout = ({ children }) => {
           <div className="hidden lg:flex items-center gap-6">
             {/* Location Selector */}
             <div
+              onClick={detectLocation}
+              title="Click to refresh location"
               className={`flex items-center gap-2 text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity ${isLanding ? 'text-white' : 'text-gray-700'}`}
             >
               <MapPin size={16} className={isLanding ? 'text-teal-200' : 'text-gray-400'} />
@@ -229,30 +201,87 @@ export const Layout = ({ children }) => {
 
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden absolute top-full left-0 w-full bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-xl py-6 px-6 flex flex-col gap-6 animate-fade-in text-gray-900">
-            {/* Render simplified mobile menu for brevity */}
-            <div className="flex flex-col gap-4">
-              <Button
-                onClick={() => {
-                  navigate('/auth');
-                  setMobileMenuOpen(false);
-                }}
-                variant="secondary"
-                className="w-full justify-center"
-              >
-                Log In
-              </Button>
-              <Button
-                onClick={() => {
-                  navigate('/auth?signup=true');
-                  setMobileMenuOpen(false);
-                }}
-                variant="primary"
-                className="w-full justify-center"
-              >
-                Sign Up
-              </Button>
+          <div className="lg:hidden absolute top-full left-0 w-full bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-xl py-6 px-6 flex flex-col gap-4 animate-fade-in text-gray-900 z-50">
+            <Link
+              to="/services"
+              onClick={() => setMobileMenuOpen(false)}
+              className="font-bold py-2 border-b border-gray-100"
+            >
+              Services
+            </Link>
+            <Link
+              to="/how-it-works"
+              onClick={() => setMobileMenuOpen(false)}
+              className="font-bold py-2 border-b border-gray-100"
+            >
+              How It Works
+            </Link>
+            <Link
+              to="/ai-diagnose"
+              onClick={() => setMobileMenuOpen(false)}
+              className="font-bold py-2 border-b border-gray-100"
+            >
+              AI Assistant
+            </Link>
+            <Link
+              to="/become-provider"
+              onClick={() => setMobileMenuOpen(false)}
+              className="font-bold py-2 border-b border-gray-100"
+            >
+              Become a Provider
+            </Link>
+            <Link
+              to="/about"
+              onClick={() => setMobileMenuOpen(false)}
+              className="font-bold py-2 border-b border-gray-100"
+            >
+              About Us
+            </Link>
+            <Link
+              to="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="font-bold py-2 border-b border-gray-100"
+            >
+              Contact Us
+            </Link>
+
+            <div className="flex items-center gap-2 py-2 text-sm font-bold text-gray-700">
+              <MapPin size={16} className="text-primary" />
+              <span>{userLocation}</span>
             </div>
+
+            {!user ? (
+              <div className="flex flex-col gap-3 pt-2">
+                <Button
+                  onClick={() => {
+                    navigate('/auth');
+                    setMobileMenuOpen(false);
+                  }}
+                  variant="secondary"
+                  className="w-full justify-center"
+                >
+                  Log In
+                </Button>
+                <Button
+                  onClick={() => {
+                    navigate('/auth?signup=true');
+                    setMobileMenuOpen(false);
+                  }}
+                  variant="primary"
+                  className="w-full justify-center"
+                >
+                  Sign Up
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={handleLogout}
+                variant="secondary"
+                className="w-full justify-center text-red-600 mt-2"
+              >
+                Log Out
+              </Button>
+            )}
           </div>
         )}
       </nav>
@@ -261,7 +290,7 @@ export const Layout = ({ children }) => {
       <main
         className={`flex-1 w-full mx-auto flex flex-col ${!isLanding ? 'max-w-[1440px] px-4 sm:px-6 py-8 md:py-12 mt-20' : ''}`}
       >
-        {children}
+        {children || <Outlet />}
       </main>
 
       {/* Premium Elegant Footer */}

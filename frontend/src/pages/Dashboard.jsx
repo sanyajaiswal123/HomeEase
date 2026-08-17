@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { API_ENDPOINTS } from '../config/constants';
 import { SERVICE_UI_META, DEFAULT_UI_META } from '../constants/serviceUIMeta';
@@ -25,12 +25,18 @@ const FILTERS = ['All', 'Popular', 'Nearby', 'Top Rated', 'Most Booked', 'Emerge
 const POPULAR_SEARCHES = ['AC Repair', 'Plumbing', 'Deep Cleaning', 'Electrician'];
 
 export const Dashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [services, setServices] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [activeFilter, setActiveFilter] = useState(searchParams.get('filter') || 'All');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setSearchQuery(searchParams.get('search') || '');
+    setActiveFilter(searchParams.get('filter') || 'All');
+  }, [searchParams]);
 
   const fetchServices = async () => {
     setLoading(true);
