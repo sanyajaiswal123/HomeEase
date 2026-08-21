@@ -11,7 +11,7 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       // Connect to server
-      const newSocket = io('http://localhost:5000');
+      const newSocket = io();
       setSocket(newSocket);
 
       // Register user with socket server

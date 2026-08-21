@@ -72,7 +72,7 @@ export const ProviderDashboard = () => {
 
     const socketUrl = import.meta.env.VITE_API_URL
       ? import.meta.env.VITE_API_URL.replace('/api', '')
-      : 'http://localhost:5000';
+      : '';
 
     const s = io(socketUrl);
     setSocket(s);
